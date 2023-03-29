@@ -1,6 +1,9 @@
 #!/bin/bash
 
+folder_path=${1:-$(pwd)}
+cd "$folder_path"
 read -r -p "Delete MKV files? [y/N] " response
+
 for i in *.mkv
 do
 	convert-video "$i"
