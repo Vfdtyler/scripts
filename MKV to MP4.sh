@@ -7,33 +7,28 @@ folder=${1:-$(pwd)}
 read -p "Do you want to delete the original MKV files after conversion? (y/n): " delete_original
 
 # Find mkv files
-for file in "$folder"/*.mkv; do
-    if [ -e "$file" ]; then
-        # Extract filename without extension
-		filename_with_ext=$(basename -- "$file")
-		filename="${filename_with_ext%.mkv}"
-
-        # Convert to mp4
-        convert-video "$file"
-		
-		# If HEVC file tagged with hev1, retag with hvc1
-		if
-			ffprobe -v error -select_streams v:0 -show_entries stream=codec_tag_string -of default=noprint_wrappers=1:nokey=1 "$filename.mp4" | grep hev1 > /dev/null
-		then
-			mv "$filename.mp4" "$filename hev1.mp4"
-			ffmpeg -i "$filename hev1.mp4" -c:v copy -tag:v hvc1 -c:a copy -c:s copy -map 0 "$filename.mp4"
-			rm "$filename hev1.mp4"
-		fi
-
-        # Delete the original mkv file if user confirms
-        if [ "$delete_original" == "y" ]; then
-            rm "$file"
-            echo "Original file '$file' deleted."
-        fi
-    else
-        echo "No MKV files found in the specified directory."
-        exit 1
-    fi
+for file in "$folder"/*.mkv
+do
+	# Get filename without extension
+	filename=$(basename "$file" .mkv)
+	
+	# Convert to mp4
+	convert-video "$file"
+	
+	# Get codec tag
+	codec_tag=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_tag_string -of csv=p=0 "$filename.mp4")
+	
+	# If codec tag is hev1, retag with hvc1
+	if [ "$codec_tag" = "hev1" ]
+	then
+		mv "$filename.mp4" "$filename hev1.mp4"
+		ffmpeg -i "$filename hev1.mp4" -c:v copy -tag:v hvc1 -c:a copy -c:s copy -map 0 "$filename.mp4"
+		rm "$filename hev1.mp4"
+	fi
+	
+	# Delete original MKV file if requested
+	if [ "$delete_original" = "y" ]
+	then
+		rm "$file"
+	fi
 done
-
-echo "Conversion completed."
