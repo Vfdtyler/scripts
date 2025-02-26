@@ -13,7 +13,7 @@ do
 	filename=$(basename "$file" .mkv)
 	
 	# Convert to mp4
-	convert-video "$file"
+	convert-video.rb "$file"
 	
 	# Get codec tag
 	codec_tag=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_tag_string -of csv=p=0 "$filename.mp4")
